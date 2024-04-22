@@ -1,6 +1,7 @@
 package tax
 
 import (
+	"math"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -28,7 +29,7 @@ func (h *Handler) TaxCalculationsHandler(c echo.Context) error {
 
 	personalDeduction := 60000.0
 	totalIncome := t.TotalIncome
-	// wht := t.Wht
+	wht := t.Wht
 	allowances := t.Allowances
 	deduct := 0.0
 
@@ -57,8 +58,19 @@ func (h *Handler) TaxCalculationsHandler(c echo.Context) error {
 		}
 	}
 
-	res := Tax{
-		Tax: tax,
+	tax = tax - wht
+
+	var res Tax
+	if tax < 0 {
+		res = Tax{
+			Tax:       0.0,
+			TaxRefund: math.Abs(tax),
+		}
+	} else {
+		res = Tax{
+			Tax: tax,
+		}
 	}
+
 	return c.JSON(http.StatusOK, res)
 }
