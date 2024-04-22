@@ -6,13 +6,11 @@ import (
 	"github.com/connapotae/assessment-tax/tax"
 )
 
-func (p *Postgres) GetTaxLevel(amount float64) ([]tax.TaxLevel, error) {
+func (p *Postgres) GetTaxLevels() ([]tax.TaxLevel, error) {
 	var rows *sql.Rows
 	var err error
-	sql := `select label, min_amount, max_amount, tax_percent
-			from tax_level
-			where level <= (select level from tax_level where $1::numeric <@ numrange(min_amount, max_amount, '(]'))`
-	rows, err = p.Db.Query(sql, amount)
+	sql := `select level, label, min_amount, max_amount, tax_percent from tax_level`
+	rows, err = p.Db.Query(sql)
 	if err != nil {
 		return nil, err
 	}
@@ -22,6 +20,7 @@ func (p *Postgres) GetTaxLevel(amount float64) ([]tax.TaxLevel, error) {
 	for rows.Next() {
 		var l tax.TaxLevel
 		err := rows.Scan(
+			&l.Level,
 			&l.Label,
 			&l.MinAmount,
 			&l.MaxAmount,
@@ -31,6 +30,7 @@ func (p *Postgres) GetTaxLevel(amount float64) ([]tax.TaxLevel, error) {
 			return nil, err
 		}
 		levels = append(levels, tax.TaxLevel{
+			Level:      l.Level,
 			Label:      l.Label,
 			MinAmount:  l.MinAmount,
 			MaxAmount:  l.MaxAmount,
@@ -38,6 +38,19 @@ func (p *Postgres) GetTaxLevel(amount float64) ([]tax.TaxLevel, error) {
 		})
 	}
 	return levels, nil
+}
+
+func (p *Postgres) GetTaxLevel(amount float64) (int, error) {
+	sql := `select level
+			from tax_level
+			where $1::numeric <@ numrange(min_amount, max_amount, '(]')`
+	rows := p.Db.QueryRow(sql, amount)
+	var l int
+	err := rows.Scan(&l)
+	if err != nil {
+		return 0, err
+	}
+	return l, nil
 }
 
 func (p *Postgres) GetDeduct() ([]tax.Deduct, error) {

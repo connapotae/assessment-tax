@@ -12,7 +12,8 @@ type Handler struct {
 }
 
 type Storer interface {
-	GetTaxLevel(amount float64) ([]TaxLevel, error)
+	GetTaxLevels() ([]TaxLevel, error)
+	GetTaxLevel(amount float64) (int, error)
 	GetDeduct() ([]Deduct, error)
 }
 
@@ -51,25 +52,38 @@ func (h *Handler) TaxCalculationsHandler(c echo.Context) error {
 			} else {
 				deduct = deduct + val.Amount
 			}
+		case "k-receipt":
+			if val.Amount > m["k-receipt"] {
+				deduct = deduct + m["k-receipt"]
+			} else {
+				deduct = deduct + val.Amount
+			}
 		default:
 			deduct = 0.0
 		}
 	}
 	netIncome := (totalIncome - personalDeduction) - deduct
-	levels, err := h.store.GetTaxLevel(netIncome)
+
+	allLevels, err := h.store.GetTaxLevels()
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, Err{Message: err.Error()})
+	}
+	level, err := h.store.GetTaxLevel(netIncome)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, Err{Message: err.Error()})
 	}
 
 	var taxLevel []TaxLevelRes
-	for i, val := range levels {
+	for _, val := range allLevels {
 		net := netIncome
-		if i == len(levels)-1 {
+		if val.Level == level {
 			net = net - val.MinAmount
 			tax = tax + (net*float64(val.TaxPercent))/100
-		} else {
+		} else if val.Level < level {
 			net = val.MaxAmount - val.MinAmount
 			tax = tax + (net*float64(val.TaxPercent))/100
+		} else {
+			net = 0.0
 		}
 		taxLevel = append(taxLevel, TaxLevelRes{
 			Level: val.Label,
