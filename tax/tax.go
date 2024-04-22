@@ -12,8 +12,14 @@ type Allowances struct {
 }
 
 type Tax struct {
-	Tax       float64 `json:"tax"`
-	TaxRefund float64 `json:"taxRefund,omitempty"`
+	Tax       float64       `json:"tax"`
+	TaxRefund float64       `json:"taxRefund,omitempty"`
+	TaxLevel  []TaxLevelRes `json:"taxLevel"`
+}
+
+type TaxLevelRes struct {
+	Level string  `json:"level"`
+	Tax   float64 `json:"tax"`
 }
 
 type Err struct {
@@ -23,6 +29,7 @@ type Err struct {
 type TaxLevel struct {
 	Id         int     `postgres:"id" json:"id"`
 	Level      int     `postgres:"level" json:"level"`
+	Label      string  `postgres:"label" json:"label"`
 	MinAmount  float64 `postgres:"min_amount" json:"minAmount"`
 	MaxAmount  float64 `postgres:"max_amount" json:"maxAmount"`
 	TaxPercent int     `postgres:"tax_percent" json:"taxPercent"`

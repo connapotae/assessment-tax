@@ -61,6 +61,7 @@ func (h *Handler) TaxCalculationsHandler(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, Err{Message: err.Error()})
 	}
 
+	var taxLevel []TaxLevelRes
 	for i, val := range levels {
 		net := netIncome
 		if i == len(levels)-1 {
@@ -70,6 +71,10 @@ func (h *Handler) TaxCalculationsHandler(c echo.Context) error {
 			net = val.MaxAmount - val.MinAmount
 			tax = tax + (net*float64(val.TaxPercent))/100
 		}
+		taxLevel = append(taxLevel, TaxLevelRes{
+			Level: val.Label,
+			Tax:   (net * float64(val.TaxPercent)) / 100,
+		})
 	}
 
 	tax = tax - wht
@@ -79,10 +84,12 @@ func (h *Handler) TaxCalculationsHandler(c echo.Context) error {
 		res = Tax{
 			Tax:       0.0,
 			TaxRefund: math.Abs(tax),
+			TaxLevel:  taxLevel,
 		}
 	} else {
 		res = Tax{
-			Tax: tax,
+			Tax:      tax,
+			TaxLevel: taxLevel,
 		}
 	}
 

@@ -9,7 +9,7 @@ import (
 func (p *Postgres) GetTaxLevel(amount float64) ([]tax.TaxLevel, error) {
 	var rows *sql.Rows
 	var err error
-	sql := `select min_amount, max_amount, tax_percent
+	sql := `select label, min_amount, max_amount, tax_percent
 			from tax_level
 			where level <= (select level from tax_level where $1::numeric <@ numrange(min_amount, max_amount, '(]'))`
 	rows, err = p.Db.Query(sql, amount)
@@ -22,6 +22,7 @@ func (p *Postgres) GetTaxLevel(amount float64) ([]tax.TaxLevel, error) {
 	for rows.Next() {
 		var l tax.TaxLevel
 		err := rows.Scan(
+			&l.Label,
 			&l.MinAmount,
 			&l.MaxAmount,
 			&l.TaxPercent,
@@ -30,6 +31,7 @@ func (p *Postgres) GetTaxLevel(amount float64) ([]tax.TaxLevel, error) {
 			return nil, err
 		}
 		levels = append(levels, tax.TaxLevel{
+			Label:      l.Label,
 			MinAmount:  l.MinAmount,
 			MaxAmount:  l.MaxAmount,
 			TaxPercent: l.TaxPercent,
