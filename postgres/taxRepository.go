@@ -37,3 +37,32 @@ func (p *Postgres) GetTaxLevel(amount float64) ([]tax.TaxLevel, error) {
 	}
 	return levels, nil
 }
+
+func (p *Postgres) GetDeduct() ([]tax.Deduct, error) {
+	var rows *sql.Rows
+	var err error
+	sql := `select deduct_type, deduct_amount from deduction`
+	rows, err = p.Db.Query(sql)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var deduct []tax.Deduct
+	for rows.Next() {
+		var d tax.Deduct
+		err := rows.Scan(
+			&d.DeductType,
+			&d.DeductAmount,
+		)
+		if err != nil {
+			return nil, err
+		}
+		deduct = append(deduct, tax.Deduct{
+			DeductType:   d.DeductType,
+			DeductAmount: d.DeductAmount,
+		})
+	}
+
+	return deduct, nil
+}

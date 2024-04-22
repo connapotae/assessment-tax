@@ -13,6 +13,7 @@ type Handler struct {
 
 type Storer interface {
 	GetTaxLevel(amount float64) ([]TaxLevel, error)
+	GetDeduct() ([]Deduct, error)
 }
 
 func New(db Storer) *Handler {
@@ -27,7 +28,16 @@ func (h *Handler) TaxCalculationsHandler(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, Err{Message: err.Error()})
 	}
 
-	personalDeduction := 60000.0
+	deducts, err := h.store.GetDeduct()
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, Err{Message: err.Error()})
+	}
+	m := make(map[string]float64)
+	for _, val := range deducts {
+		m[val.DeductType] = val.DeductAmount
+	}
+
+	personalDeduction := m["personal"]
 	totalIncome := t.TotalIncome
 	wht := t.Wht
 	allowances := t.Allowances
@@ -36,12 +46,16 @@ func (h *Handler) TaxCalculationsHandler(c echo.Context) error {
 	for _, val := range allowances {
 		switch val.AllowanceType {
 		case "donation":
-			deduct = deduct + val.Amount
+			if val.Amount > m["donation"] {
+				deduct = deduct + m["donation"]
+			} else {
+				deduct = deduct + val.Amount
+			}
 		default:
 			deduct = 0.0
 		}
 	}
-	netIncome := (totalIncome - personalDeduction)
+	netIncome := (totalIncome - personalDeduction) - deduct
 	levels, err := h.store.GetTaxLevel(netIncome)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, Err{Message: err.Error()})

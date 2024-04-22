@@ -27,3 +27,9 @@ type TaxLevel struct {
 	MaxAmount  float64 `postgres:"max_amount" json:"maxAmount"`
 	TaxPercent int     `postgres:"tax_percent" json:"taxPercent"`
 }
+
+type Deduct struct {
+	Id           int     `postgres:"id" json:"id"`
+	DeductType   string  `postgres:"deduct_type" json:"deductType"`
+	DeductAmount float64 `postgres:"deduct_amount" json:"deductAmount"`
+}
