@@ -29,11 +29,13 @@ func TestTax(t *testing.T) {
 	stubRefactoring := StubTax{
 		taxLevel: []TaxLevel{
 			{
+				Label:      "0-150,000",
 				MinAmount:  0,
 				MaxAmount:  150000,
 				TaxPercent: 0,
 			},
 			{
+				Label:      "150,001-500,000",
 				MinAmount:  150000,
 				MaxAmount:  500000,
 				TaxPercent: 10,
@@ -92,25 +94,31 @@ func TestTax(t *testing.T) {
 			name: "given user able to getting tax calculations should return tax",
 			req:  `{ "totalIncome": 500000.0, "wht": 0.0, "allowances": [ { "allowanceType": "donation", "amount": 0.0 }]}`,
 			stub: stubRefactoring,
-			want: Tax{Tax: 29000.0},
+			want: Tax{Tax: 29000.0, TaxLevel: []TaxLevelRes{{Level: "0-150,000", Tax: 0}, {Level: "150,001-500,000", Tax: 29000}}},
 		},
 		{
 			name: "given user able to getting tax calculations with wht should return tax",
 			req:  `{ "totalIncome": 500000.0, "wht": 25000.0, "allowances": [ { "allowanceType": "donation", "amount": 0.0 }]}`,
 			stub: stubRefactoring,
-			want: Tax{Tax: 4000.0},
+			want: Tax{Tax: 4000.0, TaxLevel: []TaxLevelRes{{Level: "0-150,000", Tax: 0}, {Level: "150,001-500,000", Tax: 29000}}},
 		},
 		{
 			name: "given user able to getting tax calculations with wht should return tax and tax refund",
 			req:  `{ "totalIncome": 500000.0, "wht": 35000.0, "allowances": [ { "allowanceType": "donation", "amount": 0.0 }]}`,
 			stub: stubRefactoring,
-			want: Tax{Tax: 0.0, TaxRefund: 6000.0},
+			want: Tax{Tax: 0.0, TaxRefund: 6000.0, TaxLevel: []TaxLevelRes{{Level: "0-150,000", Tax: 0}, {Level: "150,001-500,000", Tax: 29000}}},
 		},
 		{
 			name: "given user able to getting tax calculations with deduct donation should return tax",
 			req:  `{ "totalIncome": 500000.0, "wht": 0.0, "allowances": [ { "allowanceType": "donation", "amount": 200000.0 }]}`,
 			stub: stubRefactoring,
-			want: Tax{Tax: 19000.0},
+			want: Tax{Tax: 19000.0, TaxLevel: []TaxLevelRes{{Level: "0-150,000", Tax: 0}, {Level: "150,001-500,000", Tax: 19000}}},
+		},
+		{
+			name: "given user able to getting tax calculations should return tax and tax by level",
+			req:  `{ "totalIncome": 500000.0, "wht": 0.0, "allowances": [ { "allowanceType": "donation", "amount": 200000.0 }]}`,
+			stub: stubRefactoring,
+			want: Tax{Tax: 19000.0, TaxLevel: []TaxLevelRes{{Level: "0-150,000", Tax: 0}, {Level: "150,001-500,000", Tax: 19000}}},
 		},
 	}
 	for _, tt := range tests2 {
