@@ -40,7 +40,6 @@ func (h *Handler) TaxCalculationsHandler(c echo.Context) error {
 			deduct = 0.0
 		}
 	}
-
 	netIncome := (totalIncome - personalDeduction)
 	levels, err := h.store.GetTaxLevel(netIncome)
 	if err != nil {
