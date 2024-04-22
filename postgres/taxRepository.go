@@ -68,3 +68,11 @@ func (p *Postgres) GetDeduct() ([]tax.Deduct, error) {
 
 	return deduct, nil
 }
+
+func (p *Postgres) UpdateDeductionAmount(amount float64, types string) error {
+	_, err := p.Db.Exec("UPDATE deduction SET deduct_amount = $1 WHERE deduct_type = $2", amount, types)
+	if err != nil {
+		return err
+	}
+	return nil
+}
