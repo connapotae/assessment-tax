@@ -8,6 +8,6 @@ type AdminDeduction struct {
 	Amount float64 `json:"amount" validate:"required"`
 }
 
-type PersonalDeduct struct {
-	PersonalDeduction float64 `json:"personalDeduction"`
+type DeductRes struct {
+	PersonalDeduction float64 `json:"personalDeduction,omitempty"`
 }
