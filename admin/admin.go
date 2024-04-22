@@ -10,4 +10,5 @@ type AdminDeduction struct {
 
 type DeductRes struct {
 	PersonalDeduction float64 `json:"personalDeduction,omitempty"`
+	KReceiptDeduction float64 `json:"kReceipt,omitempty"`
 }

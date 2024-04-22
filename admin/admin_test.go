@@ -28,8 +28,11 @@ func TestAdmin(t *testing.T) {
 		want       any
 	}{
 		{name: "given unable to setting personal deduction should return 500 and error message", deductType: "personal", req: `{ "amount": 70000.0 }`, stub: StubAdmin{errs: echo.ErrInternalServerError}, want: http.StatusInternalServerError},
-		{name: "given unable to setting personal deduction should return 400 and error message", deductType: "personal", req: "test tax calculations", stub: StubAdmin{}, want: http.StatusBadRequest},
+		{name: "given unable to setting personal deduction should return 400 and error message", deductType: "personal", req: `{ "amount": 9000.0 }`, stub: StubAdmin{}, want: http.StatusBadRequest},
 		{name: "given unable to setting personal deduction with wrong path should return 400 and error message", deductType: "", req: `{ "amount": 70000.0 }`, stub: StubAdmin{}, want: http.StatusBadRequest},
+		{name: "given unable to setting k-receipt deduction should return 500 and error message", deductType: "k-receipt", req: `{ "amount": 70000.0 }`, stub: StubAdmin{errs: echo.ErrInternalServerError}, want: http.StatusInternalServerError},
+		{name: "given unable to setting k-receipt deduction should return 400 and error message", deductType: "k-receipt", req: `{ "amount": 200000.0 }`, stub: StubAdmin{}, want: http.StatusBadRequest},
+		{name: "given unable to setting k-receipt deduction with wrong path should return 400 and error message", deductType: "", req: `{ "amount": 70000.0 }`, stub: StubAdmin{}, want: http.StatusBadRequest},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -64,6 +67,13 @@ func TestAdmin(t *testing.T) {
 			req:        `{ "amount": 70000.0 }`,
 			stub:       StubAdmin{},
 			want:       DeductRes{PersonalDeduction: 70000.0},
+		},
+		{
+			name:       "given user able to setting k-receipt deduction should return k-receipt deduction",
+			deductType: "k-receipt",
+			req:        `{ "amount": 70000.0 }`,
+			stub:       StubAdmin{},
+			want:       DeductRes{KReceiptDeduction: 70000.0},
 		},
 	}
 	for _, tt := range tests2 {
