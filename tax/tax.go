@@ -1,7 +1,7 @@
 package tax
 
 type TaxCalcualtions struct {
-	TotalIncome float64       `json:"totalIncome" binding:"required,numeric,gt=1,max=1000000000"`
+	TotalIncome float64       `json:"totalIncome"`
 	Wht         float64       `json:"wht"`
 	Allowances  []*Allowances `json:"allowances"`
 }
