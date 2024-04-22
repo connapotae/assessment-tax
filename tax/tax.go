@@ -1,9 +1,9 @@
 package tax
 
 type TaxCalcualtions struct {
-	TotalIncome float64       `json:"totalIncome"`
-	Wht         float64       `json:"wht"`
-	Allowances  []*Allowances `json:"allowances"`
+	TotalIncome float64      `json:"totalIncome"`
+	Wht         float64      `json:"wht"`
+	Allowances  []Allowances `json:"allowances"`
 }
 
 type Allowances struct {
