@@ -32,6 +32,7 @@ func TestAdmin(t *testing.T) {
 		{name: "given unable to setting personal deduction with wrong path should return 400 and error message", deductType: "", req: `{ "amount": 70000.0 }`, stub: StubAdmin{}, want: http.StatusBadRequest},
 		{name: "given unable to setting k-receipt deduction should return 500 and error message", deductType: "k-receipt", req: `{ "amount": 70000.0 }`, stub: StubAdmin{errs: echo.ErrInternalServerError}, want: http.StatusInternalServerError},
 		{name: "given unable to setting k-receipt deduction should return 400 and error message", deductType: "k-receipt", req: `{ "amount": 200000.0 }`, stub: StubAdmin{}, want: http.StatusBadRequest},
+		{name: "given unable to setting k-receipt deduction with wrong data type should return 400 and error message", deductType: "k-receipt", req: `{ "amount": "test" }`, stub: StubAdmin{}, want: http.StatusBadRequest},
 		{name: "given unable to setting k-receipt deduction with wrong path should return 400 and error message", deductType: "", req: `{ "amount": 70000.0 }`, stub: StubAdmin{}, want: http.StatusBadRequest},
 	}
 	for _, tt := range tests {

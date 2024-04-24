@@ -5,7 +5,7 @@ type Err struct {
 }
 
 type AdminDeduction struct {
-	Amount float64 `json:"amount" validate:"required"`
+	Amount float64 `json:"amount"`
 }
 
 type DeductRes struct {
