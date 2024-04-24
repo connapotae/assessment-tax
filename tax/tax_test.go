@@ -12,13 +12,13 @@ import (
 )
 
 type StubTax struct {
-	taxLevel []TaxLevel
-	deduct   []Deduct
+	taxLevel []TBTaxLevel
+	deduct   []TBDeduct
 	level    int
 	err      error
 }
 
-func (s StubTax) GetTaxLevels() ([]TaxLevel, error) {
+func (s StubTax) GetTaxLevels() ([]TBTaxLevel, error) {
 	return s.taxLevel, s.err
 }
 
@@ -26,13 +26,13 @@ func (s StubTax) GetTaxLevel(amount float64) (int, error) {
 	return s.level, s.err
 }
 
-func (s StubTax) GetDeduct() ([]Deduct, error) {
+func (s StubTax) GetDeduct() ([]TBDeduct, error) {
 	return s.deduct, s.err
 }
 
 func TestTax(t *testing.T) {
 	stubRefactoring := StubTax{
-		taxLevel: []TaxLevel{
+		taxLevel: []TBTaxLevel{
 			{
 				Level:      1,
 				Label:      "0-150,000",
@@ -69,7 +69,7 @@ func TestTax(t *testing.T) {
 				TaxPercent: 35,
 			},
 		},
-		deduct: []Deduct{
+		deduct: []TBDeduct{
 			{
 				DeductType:   "personal",
 				DeductAmount: 60000,
@@ -123,31 +123,31 @@ func TestTax(t *testing.T) {
 			name: "given user able to getting tax calculations should return tax",
 			req:  `{ "totalIncome": 500000.0, "wht": 0.0, "allowances": [ { "allowanceType": "donation", "amount": 0.0 }]}`,
 			stub: stubRefactoring,
-			want: Tax{Tax: 29000.0, TaxLevel: []TaxLevelRes{{Level: "0-150,000", Tax: 0}, {Level: "150,001-500,000", Tax: 29000}, {Level: "500,001-1,000,000", Tax: 0.0}, {Level: "1,000,001-2,000,000", Tax: 0.0}, {Level: "2,000,001 ขึ้นไป", Tax: 0.0}}},
+			want: Tax{Tax: 29000.0, TaxLevel: []TaxLevel{{Level: "0-150,000", Tax: 0}, {Level: "150,001-500,000", Tax: 29000}, {Level: "500,001-1,000,000", Tax: 0.0}, {Level: "1,000,001-2,000,000", Tax: 0.0}, {Level: "2,000,001 ขึ้นไป", Tax: 0.0}}},
 		},
 		{
 			name: "given user able to getting tax calculations with wht should return tax",
 			req:  `{ "totalIncome": 500000.0, "wht": 25000.0, "allowances": [ { "allowanceType": "donation", "amount": 0.0 }]}`,
 			stub: stubRefactoring,
-			want: Tax{Tax: 4000.0, TaxLevel: []TaxLevelRes{{Level: "0-150,000", Tax: 0}, {Level: "150,001-500,000", Tax: 29000}, {Level: "500,001-1,000,000", Tax: 0.0}, {Level: "1,000,001-2,000,000", Tax: 0.0}, {Level: "2,000,001 ขึ้นไป", Tax: 0.0}}},
+			want: Tax{Tax: 4000.0, TaxLevel: []TaxLevel{{Level: "0-150,000", Tax: 0}, {Level: "150,001-500,000", Tax: 29000}, {Level: "500,001-1,000,000", Tax: 0.0}, {Level: "1,000,001-2,000,000", Tax: 0.0}, {Level: "2,000,001 ขึ้นไป", Tax: 0.0}}},
 		},
 		{
 			name: "given user able to getting tax calculations with wht should return tax and tax refund",
 			req:  `{ "totalIncome": 500000.0, "wht": 35000.0, "allowances": [ { "allowanceType": "donation", "amount": 0.0 }]}`,
 			stub: stubRefactoring,
-			want: Tax{Tax: 0.0, TaxRefund: 6000.0, TaxLevel: []TaxLevelRes{{Level: "0-150,000", Tax: 0}, {Level: "150,001-500,000", Tax: 29000}, {Level: "500,001-1,000,000", Tax: 0.0}, {Level: "1,000,001-2,000,000", Tax: 0.0}, {Level: "2,000,001 ขึ้นไป", Tax: 0.0}}},
+			want: Tax{Tax: 0.0, TaxRefund: 6000.0, TaxLevel: []TaxLevel{{Level: "0-150,000", Tax: 0}, {Level: "150,001-500,000", Tax: 29000}, {Level: "500,001-1,000,000", Tax: 0.0}, {Level: "1,000,001-2,000,000", Tax: 0.0}, {Level: "2,000,001 ขึ้นไป", Tax: 0.0}}},
 		},
 		{
 			name: "given user able to getting tax calculations with deduct donation should return tax",
 			req:  `{ "totalIncome": 500000.0, "wht": 0.0, "allowances": [ { "allowanceType": "donation", "amount": 200000.0 }]}`,
 			stub: stubRefactoring,
-			want: Tax{Tax: 19000.0, TaxLevel: []TaxLevelRes{{Level: "0-150,000", Tax: 0}, {Level: "150,001-500,000", Tax: 19000}, {Level: "500,001-1,000,000", Tax: 0.0}, {Level: "1,000,001-2,000,000", Tax: 0.0}, {Level: "2,000,001 ขึ้นไป", Tax: 0.0}}},
+			want: Tax{Tax: 19000.0, TaxLevel: []TaxLevel{{Level: "0-150,000", Tax: 0}, {Level: "150,001-500,000", Tax: 19000}, {Level: "500,001-1,000,000", Tax: 0.0}, {Level: "1,000,001-2,000,000", Tax: 0.0}, {Level: "2,000,001 ขึ้นไป", Tax: 0.0}}},
 		},
 		{
 			name: "given user able to getting tax calculations should return tax and tax by level",
 			req:  `{ "totalIncome": 500000.0, "wht": 0.0, "allowances": [ { "allowanceType": "donation", "amount": 200000.0 }]}`,
 			stub: stubRefactoring,
-			want: Tax{Tax: 19000.0, TaxLevel: []TaxLevelRes{{Level: "0-150,000", Tax: 0}, {Level: "150,001-500,000", Tax: 19000}, {Level: "500,001-1,000,000", Tax: 0.0}, {Level: "1,000,001-2,000,000", Tax: 0.0}, {Level: "2,000,001 ขึ้นไป", Tax: 0.0}}},
+			want: Tax{Tax: 19000.0, TaxLevel: []TaxLevel{{Level: "0-150,000", Tax: 0}, {Level: "150,001-500,000", Tax: 19000}, {Level: "500,001-1,000,000", Tax: 0.0}, {Level: "1,000,001-2,000,000", Tax: 0.0}, {Level: "2,000,001 ขึ้นไป", Tax: 0.0}}},
 		},
 	}
 	for _, tt := range tests2 {

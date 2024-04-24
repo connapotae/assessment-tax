@@ -6,7 +6,7 @@ import (
 	"github.com/connapotae/assessment-tax/tax"
 )
 
-func (p *Postgres) GetTaxLevels() ([]tax.TaxLevel, error) {
+func (p *Postgres) GetTaxLevels() ([]tax.TBTaxLevel, error) {
 	var rows *sql.Rows
 	var err error
 	sql := `select level, label, min_amount, max_amount, tax_percent from tax_level`
@@ -16,9 +16,9 @@ func (p *Postgres) GetTaxLevels() ([]tax.TaxLevel, error) {
 	}
 	defer rows.Close()
 
-	var levels []tax.TaxLevel
+	var levels []tax.TBTaxLevel
 	for rows.Next() {
-		var l tax.TaxLevel
+		var l tax.TBTaxLevel
 		err := rows.Scan(
 			&l.Level,
 			&l.Label,
@@ -29,7 +29,7 @@ func (p *Postgres) GetTaxLevels() ([]tax.TaxLevel, error) {
 		if err != nil {
 			return nil, err
 		}
-		levels = append(levels, tax.TaxLevel{
+		levels = append(levels, tax.TBTaxLevel{
 			Level:      l.Level,
 			Label:      l.Label,
 			MinAmount:  l.MinAmount,
@@ -53,7 +53,7 @@ func (p *Postgres) GetTaxLevel(amount float64) (int, error) {
 	return l, nil
 }
 
-func (p *Postgres) GetDeduct() ([]tax.Deduct, error) {
+func (p *Postgres) GetDeduct() ([]tax.TBDeduct, error) {
 	var rows *sql.Rows
 	var err error
 	sql := `select deduct_type, deduct_amount from deduction`
@@ -63,9 +63,9 @@ func (p *Postgres) GetDeduct() ([]tax.Deduct, error) {
 	}
 	defer rows.Close()
 
-	var deduct []tax.Deduct
+	var deduct []tax.TBDeduct
 	for rows.Next() {
-		var d tax.Deduct
+		var d tax.TBDeduct
 		err := rows.Scan(
 			&d.DeductType,
 			&d.DeductAmount,
@@ -73,7 +73,7 @@ func (p *Postgres) GetDeduct() ([]tax.Deduct, error) {
 		if err != nil {
 			return nil, err
 		}
-		deduct = append(deduct, tax.Deduct{
+		deduct = append(deduct, tax.TBDeduct{
 			DeductType:   d.DeductType,
 			DeductAmount: d.DeductAmount,
 		})
