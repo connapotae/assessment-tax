@@ -15,7 +15,6 @@ type Handler struct {
 
 type Storer interface {
 	GetTaxLevels() ([]TBTaxLevel, error)
-	GetTaxLevel(amount float64) (int, error)
 	GetDeduct() ([]TBDeduct, error)
 }
 
@@ -41,6 +40,31 @@ func donationDeduct(m map[string]float64) float64 {
 	return m["donation"]
 }
 
+func calcDeduct(allowances Allowances, m map[string]float64) float64 {
+	result := 0.0
+	kReceiptDeduction := kReceiptDeduct(m)
+	donateDeduction := donationDeduct(m)
+
+	switch allowances.AllowanceType {
+	case "donation":
+		if allowances.Amount > donateDeduction {
+			result += donateDeduction
+		} else {
+			result += allowances.Amount
+		}
+	case "k-receipt":
+		if allowances.Amount > kReceiptDeduction {
+			result += kReceiptDeduction
+		} else {
+			result += allowances.Amount
+		}
+	default:
+		result = 0.0
+	}
+
+	return result
+}
+
 func (h *Handler) TaxCalculationsHandler(c echo.Context) error {
 	var tax float64
 	var t TaxCalcualtions
@@ -56,30 +80,13 @@ func (h *Handler) TaxCalculationsHandler(c echo.Context) error {
 	m := mapDeduct(deducts)
 
 	personalDeduction := personalDeduct(m)
-	kReceiptDeduction := kReceiptDeduct(m)
-	donateDeduction := donationDeduct(m)
 	totalIncome := t.TotalIncome
 	wht := t.Wht
 	allowances := t.Allowances
 	deduct := 0.0
 
-	for _, val := range allowances {
-		switch val.AllowanceType {
-		case "donation":
-			if val.Amount > donateDeduction {
-				deduct = deduct + donateDeduction
-			} else {
-				deduct = deduct + val.Amount
-			}
-		case "k-receipt":
-			if val.Amount > kReceiptDeduction {
-				deduct = deduct + kReceiptDeduction
-			} else {
-				deduct = deduct + val.Amount
-			}
-		default:
-			deduct = 0.0
-		}
+	for _, a := range allowances {
+		deduct += calcDeduct(a, m)
 	}
 	netIncome := (totalIncome - personalDeduction) - deduct
 
@@ -87,26 +94,21 @@ func (h *Handler) TaxCalculationsHandler(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, Err{Message: err.Error()})
 	}
-	level, err := h.store.GetTaxLevel(netIncome)
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, Err{Message: err.Error()})
-	}
 
 	var taxLevel []TaxLevel
 	for _, val := range allLevels {
 		net := netIncome
-		if val.Level == level {
+		eachtax := 0.0
+		if net > val.MinAmount && net <= val.MaxAmount {
 			net = net - val.MinAmount
-			tax = tax + (net*float64(val.TaxPercent))/100
-		} else if val.Level < level {
-			net = val.MaxAmount - val.MinAmount
-			tax = tax + (net*float64(val.TaxPercent))/100
-		} else {
-			net = 0.0
+			eachtax = (net * float64(val.TaxPercent)) / 100
+		} else if net > val.MaxAmount {
+			eachtax = ((val.MaxAmount - val.MinAmount) * float64(val.TaxPercent)) / 100
 		}
+		tax += eachtax
 		taxLevel = append(taxLevel, TaxLevel{
 			Level: val.Label,
-			Tax:   (net * float64(val.TaxPercent)) / 100,
+			Tax:   eachtax,
 		})
 	}
 

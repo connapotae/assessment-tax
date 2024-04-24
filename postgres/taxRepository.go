@@ -40,19 +40,6 @@ func (p *Postgres) GetTaxLevels() ([]tax.TBTaxLevel, error) {
 	return levels, nil
 }
 
-func (p *Postgres) GetTaxLevel(amount float64) (int, error) {
-	sql := `select level
-			from tax_level
-			where $1::numeric <@ numrange(min_amount, max_amount, '(]')`
-	rows := p.Db.QueryRow(sql, amount)
-	var l int
-	err := rows.Scan(&l)
-	if err != nil {
-		return 0, err
-	}
-	return l, nil
-}
-
 func (p *Postgres) GetDeduct() ([]tax.TBDeduct, error) {
 	var rows *sql.Rows
 	var err error

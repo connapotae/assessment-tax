@@ -17,16 +17,11 @@ import (
 type StubTax struct {
 	taxLevel []TBTaxLevel
 	deduct   []TBDeduct
-	level    int
 	err      error
 }
 
 func (s StubTax) GetTaxLevels() ([]TBTaxLevel, error) {
 	return s.taxLevel, s.err
-}
-
-func (s StubTax) GetTaxLevel(amount float64) (int, error) {
-	return s.level, s.err
 }
 
 func (s StubTax) GetDeduct() ([]TBDeduct, error) {
@@ -86,7 +81,6 @@ func TestTax(t *testing.T) {
 				DeductAmount: 50000,
 			},
 		},
-		level: 2,
 	}
 
 	tests := []struct {
