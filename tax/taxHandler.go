@@ -23,6 +23,24 @@ func New(db Storer) *Handler {
 	return &Handler{store: db}
 }
 
+func mapDeduct(deducts []TBDeduct) map[string]float64 {
+	m := make(map[string]float64)
+	for _, val := range deducts {
+		m[val.DeductType] = val.DeductAmount
+	}
+	return m
+}
+
+func personalDeduct(m map[string]float64) float64 {
+	return m["personal"]
+}
+func kReceiptDeduct(m map[string]float64) float64 {
+	return m["k-receipt"]
+}
+func donationDeduct(m map[string]float64) float64 {
+	return m["donation"]
+}
+
 func (h *Handler) TaxCalculationsHandler(c echo.Context) error {
 	var tax float64
 	var t TaxCalcualtions
@@ -35,12 +53,11 @@ func (h *Handler) TaxCalculationsHandler(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, Err{Message: err.Error()})
 	}
-	m := make(map[string]float64)
-	for _, val := range deducts {
-		m[val.DeductType] = val.DeductAmount
-	}
+	m := mapDeduct(deducts)
 
-	personalDeduction := m["personal"]
+	personalDeduction := personalDeduct(m)
+	kReceiptDeduction := kReceiptDeduct(m)
+	donateDeduction := donationDeduct(m)
 	totalIncome := t.TotalIncome
 	wht := t.Wht
 	allowances := t.Allowances
@@ -49,14 +66,14 @@ func (h *Handler) TaxCalculationsHandler(c echo.Context) error {
 	for _, val := range allowances {
 		switch val.AllowanceType {
 		case "donation":
-			if val.Amount > m["donation"] {
-				deduct = deduct + m["donation"]
+			if val.Amount > donateDeduction {
+				deduct = deduct + donateDeduction
 			} else {
 				deduct = deduct + val.Amount
 			}
 		case "k-receipt":
-			if val.Amount > m["k-receipt"] {
-				deduct = deduct + m["k-receipt"]
+			if val.Amount > kReceiptDeduction {
+				deduct = deduct + kReceiptDeduction
 			} else {
 				deduct = deduct + val.Amount
 			}
@@ -133,12 +150,11 @@ func (h *Handler) TaxCalculationsCSVHandler(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, Err{Message: err.Error()})
 	}
-	m := make(map[string]float64)
-	for _, val := range deducts {
-		m[val.DeductType] = val.DeductAmount
-	}
+	m := mapDeduct(deducts)
 
-	personalDeduction := m["personal"]
+	personalDeduction := personalDeduct(m)
+	// kReceiptDeduction := kReceiptDeduct(m)
+	donateDeduction := donationDeduct(m)
 
 	var taxCsv []TaxCSV
 	err = gocsv.UnmarshalBytes(data, &taxCsv)
@@ -155,8 +171,8 @@ func (h *Handler) TaxCalculationsCSVHandler(c echo.Context) error {
 		wht := t.Wht
 		donation := t.Donation
 
-		if donation > m["donation"] {
-			deduct = deduct + m["donation"]
+		if donation > donateDeduction {
+			deduct = deduct + donateDeduction
 		} else {
 			deduct = deduct + donation
 		}
