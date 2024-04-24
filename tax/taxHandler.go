@@ -65,6 +65,17 @@ func calcDeduct(allowances Allowances, m map[string]float64) float64 {
 	return result
 }
 
+func calcTaxByLevel(tbTax TBTaxLevel, income float64) float64 {
+	result := 0.0
+	if income > tbTax.MinAmount && income <= tbTax.MaxAmount {
+		income = income - tbTax.MinAmount
+		result = (income * float64(tbTax.TaxPercent)) / 100
+	} else if income > tbTax.MaxAmount {
+		result = ((tbTax.MaxAmount - tbTax.MinAmount) * float64(tbTax.TaxPercent)) / 100
+	}
+	return result
+}
+
 func (h *Handler) TaxCalculationsHandler(c echo.Context) error {
 	var tax float64
 	var t TaxCalcualtions
@@ -96,18 +107,11 @@ func (h *Handler) TaxCalculationsHandler(c echo.Context) error {
 	}
 
 	var taxLevel []TaxLevel
-	for _, val := range allLevels {
-		net := netIncome
-		eachtax := 0.0
-		if net > val.MinAmount && net <= val.MaxAmount {
-			net = net - val.MinAmount
-			eachtax = (net * float64(val.TaxPercent)) / 100
-		} else if net > val.MaxAmount {
-			eachtax = ((val.MaxAmount - val.MinAmount) * float64(val.TaxPercent)) / 100
-		}
+	for _, t := range allLevels {
+		eachtax := calcTaxByLevel(t, netIncome)
 		tax += eachtax
 		taxLevel = append(taxLevel, TaxLevel{
-			Level: val.Label,
+			Level: t.Label,
 			Tax:   eachtax,
 		})
 	}
@@ -164,7 +168,7 @@ func (h *Handler) TaxCalculationsCSVHandler(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, Err{Message: err.Error()})
 	}
 
-	var eachTax []TaxesDetail
+	var taxes []TaxesDetail
 	for _, t := range taxCsv {
 		var tax float64
 		deduct := 0.0
@@ -185,26 +189,21 @@ func (h *Handler) TaxCalculationsCSVHandler(c echo.Context) error {
 			return c.JSON(http.StatusInternalServerError, Err{Message: err.Error()})
 		}
 
-		for _, val := range allLevels {
-			net := netIncome
-			if net > val.MinAmount && net <= val.MaxAmount {
-				net = net - val.MinAmount
-				tax = tax + (net*float64(val.TaxPercent))/100
-			} else if net > val.MaxAmount {
-				tax = tax + ((val.MaxAmount-val.MinAmount)*float64(val.TaxPercent))/100
-			}
+		for _, t := range allLevels {
+			eachtax := calcTaxByLevel(t, netIncome)
+			tax += eachtax
 		}
 
 		tax = tax - wht
 
 		if tax < 0 {
-			eachTax = append(eachTax, TaxesDetail{
+			taxes = append(taxes, TaxesDetail{
 				TotalIncome: t.TotalIncome,
 				Tax:         0.0,
 				TaxRefund:   math.Abs(tax),
 			})
 		} else {
-			eachTax = append(eachTax, TaxesDetail{
+			taxes = append(taxes, TaxesDetail{
 				TotalIncome: t.TotalIncome,
 				Tax:         tax,
 			})
@@ -212,7 +211,7 @@ func (h *Handler) TaxCalculationsCSVHandler(c echo.Context) error {
 	}
 
 	res := Taxes{
-		Taxes: eachTax,
+		Taxes: taxes,
 	}
 
 	return c.JSON(http.StatusOK, res)

@@ -89,7 +89,7 @@ func TestTax(t *testing.T) {
 		stub StubTax
 		want any
 	}{
-		{name: "given unable to get tax calculations should return 500 and error message", req: "", stub: StubTax{err: echo.ErrInternalServerError}, want: http.StatusInternalServerError},
+		{name: "given unable to get tax calculations should return 500 and error message", req: `{ "totalIncome": 500000.0, "wht": 0.0, "allowances": [ { "allowanceType": "donation", "amount": 0.0 }]}`, stub: StubTax{err: echo.ErrInternalServerError}, want: http.StatusInternalServerError},
 		{name: "given unable to get tax calculations should return 400 and error message", req: "test tax calculations", stub: StubTax{}, want: http.StatusBadRequest},
 	}
 	for _, tt := range tests {
