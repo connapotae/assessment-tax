@@ -166,21 +166,14 @@ func (h *Handler) TaxCalculationsCSVHandler(c echo.Context) error {
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, Err{Message: err.Error()})
 		}
-		level, err := h.store.GetTaxLevel(netIncome)
-		if err != nil {
-			return c.JSON(http.StatusInternalServerError, Err{Message: err.Error()})
-		}
 
 		for _, val := range allLevels {
 			net := netIncome
-			if val.Level == level {
+			if net > val.MinAmount && net <= val.MaxAmount {
 				net = net - val.MinAmount
 				tax = tax + (net*float64(val.TaxPercent))/100
-			} else if val.Level < level {
-				net = val.MaxAmount - val.MinAmount
-				tax = tax + (net*float64(val.TaxPercent))/100
-			} else {
-				net = 0.0
+			} else if net > val.MaxAmount {
+				tax = tax + ((val.MaxAmount-val.MinAmount)*float64(val.TaxPercent))/100
 			}
 		}
 
