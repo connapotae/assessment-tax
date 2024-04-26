@@ -26,18 +26,6 @@ type validates struct {
 	res       any
 }
 
-func condition(m map[string]validates, dtype string) string {
-	return m[dtype].condition
-}
-
-func errString(m map[string]validates, dtype string) string {
-	return m[dtype].errString
-}
-
-func response(m map[string]validates, dtype string) any {
-	return m[dtype].res
-}
-
 func (h *Handler) SetupDeductionHandler(c echo.Context) error {
 	var a AdminDeduction
 	if err := c.Bind(&a); err != nil {
@@ -55,21 +43,19 @@ func (h *Handler) SetupDeductionHandler(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, Err{Message: "deduct type not support"})
 	}
 
-	v := validates{
-		condition: condition(m, deductType),
-		errString: errString(m, deductType),
-		res:       response(m, deductType),
-	}
+	condition := m[deductType].condition
+	errString := m[deductType].errString
+	res := m[deductType].res
 
 	validate := validator.New(validator.WithRequiredStructEnabled())
-	if err := validate.Var(a.Amount, v.condition); err != nil {
-		return c.JSON(http.StatusBadRequest, Err{Message: v.errString})
+	if err := validate.Var(a.Amount, condition); err != nil {
+		return c.JSON(http.StatusBadRequest, Err{Message: errString})
 	}
 
 	if err := h.store.UpdateDeductionAmount(a.Amount, deductType); err != nil {
 		return c.JSON(http.StatusInternalServerError, Err{Message: err.Error()})
 	}
 
-	return c.JSON(http.StatusCreated, v.res)
+	return c.JSON(http.StatusCreated, res)
 
 }

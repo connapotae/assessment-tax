@@ -42,6 +42,11 @@ type Err struct {
 	Message string `json:"message"`
 }
 
+type ValidateErr struct {
+	Field   string `json:"field"`
+	Message string `json:"message"`
+}
+
 type TBTaxLevel struct {
 	Id         int     `postgres:"id" json:"id"`
 	Level      int     `postgres:"level" json:"level"`

@@ -9,6 +9,11 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+const (
+	invalidRequestErr  string = "Request parameters are invalid."
+	invalidDataFileErr string = "File contains invalid data."
+)
+
 type Handler struct {
 	store Storer
 }
@@ -20,6 +25,81 @@ type Storer interface {
 
 func New(db Storer) *Handler {
 	return &Handler{store: db}
+}
+
+func (t *TaxCalcualtions) validate() []*ValidateErr {
+	var errs []*ValidateErr
+	gtZero := "must more than 0"
+
+	// totalIncome
+	if t.TotalIncome < 0 {
+		errs = append(errs, &ValidateErr{
+			Field:   "totalIncome",
+			Message: gtZero,
+		})
+	}
+
+	// wht
+	if t.Wht < 0 {
+		errs = append(errs, &ValidateErr{
+			Field:   "wht",
+			Message: gtZero,
+		})
+	}
+
+	if t.Wht > t.TotalIncome {
+		errs = append(errs, &ValidateErr{
+			Field:   "wht",
+			Message: "must more than totalIncome",
+		})
+	}
+
+	// allowances
+	for _, v := range t.Allowances {
+		switch v.AllowanceType {
+		case "donation":
+			if v.Amount < 0 {
+				errs = append(errs, &ValidateErr{
+					Field:   "donation amount",
+					Message: gtZero,
+				})
+			}
+		case "k-receipt":
+			if v.Amount < 0 {
+				errs = append(errs, &ValidateErr{
+					Field:   "k-receipt amount",
+					Message: gtZero,
+				})
+			}
+		}
+	}
+
+	return errs
+}
+
+func (t *TaxCSV) validate() error {
+	var err error
+
+	// totalIncome
+	if t.TotalIncome < 0 {
+		return err
+	}
+
+	// wht
+	if t.Wht < 0 {
+		return err
+	}
+
+	if t.Wht > t.TotalIncome {
+		return err
+	}
+
+	// donation
+	if t.Donation < 0 {
+		return err
+	}
+
+	return nil
 }
 
 func mapDeduct(deducts []TBDeduct) map[string]float64 {
@@ -81,7 +161,11 @@ func (h *Handler) TaxCalculationsHandler(c echo.Context) error {
 	var t TaxCalcualtions
 	err := c.Bind(&t)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, Err{Message: err.Error()})
+		return c.JSON(http.StatusBadRequest, Err{Message: invalidRequestErr})
+	}
+
+	if err := t.validate(); len(err) > 0 {
+		return c.JSON(http.StatusBadRequest, err)
 	}
 
 	deducts, err := h.store.GetDeduct()
@@ -138,7 +222,7 @@ func (h *Handler) TaxCalculationsHandler(c echo.Context) error {
 func (h *Handler) TaxCalculationsCSVHandler(c echo.Context) error {
 	file, err := c.FormFile("file")
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, Err{Message: err.Error()})
+		return c.JSON(http.StatusBadRequest, Err{Message: invalidRequestErr})
 	}
 
 	f, err := file.Open()
@@ -170,6 +254,10 @@ func (h *Handler) TaxCalculationsCSVHandler(c echo.Context) error {
 
 	var taxes []TaxesDetail
 	for _, t := range taxCsv {
+		if err := t.validate(); err != nil {
+			return c.JSON(http.StatusBadRequest, Err{Message: invalidDataFileErr})
+		}
+
 		var tax float64
 		deduct := 0.0
 
