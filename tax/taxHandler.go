@@ -1,6 +1,7 @@
 package tax
 
 import (
+	"fmt"
 	"io"
 	"math"
 	"net/http"
@@ -27,13 +28,13 @@ func New(db Storer) *Handler {
 	return &Handler{store: db}
 }
 
-func (t *TaxCalcualtions) validate() []*ValidateErr {
-	var errs []*ValidateErr
+func (t TaxCalcualtions) validate() []ValidateErr {
+	var errs []ValidateErr
 	gtZero := "must more than 0"
 
 	// totalIncome
 	if t.TotalIncome < 0 {
-		errs = append(errs, &ValidateErr{
+		errs = append(errs, ValidateErr{
 			Field:   "totalIncome",
 			Message: gtZero,
 		})
@@ -41,16 +42,16 @@ func (t *TaxCalcualtions) validate() []*ValidateErr {
 
 	// wht
 	if t.Wht < 0 {
-		errs = append(errs, &ValidateErr{
+		errs = append(errs, ValidateErr{
 			Field:   "wht",
 			Message: gtZero,
 		})
 	}
 
 	if t.Wht > t.TotalIncome {
-		errs = append(errs, &ValidateErr{
+		errs = append(errs, ValidateErr{
 			Field:   "wht",
-			Message: "must more than totalIncome",
+			Message: "must less than totalIncome",
 		})
 	}
 
@@ -59,14 +60,14 @@ func (t *TaxCalcualtions) validate() []*ValidateErr {
 		switch v.AllowanceType {
 		case "donation":
 			if v.Amount < 0 {
-				errs = append(errs, &ValidateErr{
+				errs = append(errs, ValidateErr{
 					Field:   "donation amount",
 					Message: gtZero,
 				})
 			}
 		case "k-receipt":
 			if v.Amount < 0 {
-				errs = append(errs, &ValidateErr{
+				errs = append(errs, ValidateErr{
 					Field:   "k-receipt amount",
 					Message: gtZero,
 				})
@@ -77,29 +78,42 @@ func (t *TaxCalcualtions) validate() []*ValidateErr {
 	return errs
 }
 
-func (t *TaxCSV) validate() error {
-	var err error
+func (t TaxCSV) validate() []ValidateErr {
+	var errs []ValidateErr
+	gtZero := "must more than 0"
 
 	// totalIncome
 	if t.TotalIncome < 0 {
-		return err
+		errs = append(errs, ValidateErr{
+			Field:   "totalIncome",
+			Message: gtZero,
+		})
 	}
 
 	// wht
 	if t.Wht < 0 {
-		return err
+		errs = append(errs, ValidateErr{
+			Field:   "wht",
+			Message: gtZero,
+		})
 	}
 
 	if t.Wht > t.TotalIncome {
-		return err
+		errs = append(errs, ValidateErr{
+			Field:   "wht",
+			Message: "must less than totalIncome",
+		})
 	}
 
 	// donation
 	if t.Donation < 0 {
-		return err
+		errs = append(errs, ValidateErr{
+			Field:   "donation",
+			Message: gtZero,
+		})
 	}
 
-	return nil
+	return errs
 }
 
 func mapDeduct(deducts []TBDeduct) map[string]float64 {
@@ -253,9 +267,9 @@ func (h *Handler) TaxCalculationsCSVHandler(c echo.Context) error {
 	}
 
 	var taxes []TaxesDetail
-	for _, t := range taxCsv {
-		if err := t.validate(); err != nil {
-			return c.JSON(http.StatusBadRequest, Err{Message: invalidDataFileErr})
+	for i, t := range taxCsv {
+		if err := t.validate(); len(err) > 0 {
+			return c.JSON(http.StatusBadRequest, ValidateCSVErr{Message: fmt.Sprintf("%s on line %d", invalidDataFileErr, i+1), Data: err})
 		}
 
 		var tax float64

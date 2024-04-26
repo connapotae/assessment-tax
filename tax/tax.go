@@ -47,6 +47,11 @@ type ValidateErr struct {
 	Message string `json:"message"`
 }
 
+type ValidateCSVErr struct {
+	Message string        `json:"message"`
+	Data    []ValidateErr `json:"data"`
+}
+
 type TBTaxLevel struct {
 	Id         int     `postgres:"id" json:"id"`
 	Level      int     `postgres:"level" json:"level"`
