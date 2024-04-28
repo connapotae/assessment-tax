@@ -1,7 +1,12 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/connapotae/assessment-tax/admin"
 	"github.com/connapotae/assessment-tax/config"
@@ -38,5 +43,19 @@ func main() {
 	}))
 	a.POST("/deductions/:deductType", adminHandler.SetupDeductionHandler)
 
-	e.Logger.Fatal(e.Start(cfg.Port()))
+	go func() {
+		if err := e.Start(cfg.Port()); err != nil && err != http.ErrServerClosed {
+			e.Logger.Fatal("shutting down the server.")
+		}
+	}()
+
+	shutdown := make(chan os.Signal, 1)
+	signal.Notify(shutdown, os.Interrupt, syscall.SIGTERM)
+	<-shutdown
+
+	fmt.Println("shutting down the server.")
+	if err := e.Shutdown(context.Background()); err != nil {
+		e.Logger.Fatal("shutdown err:", err)
+	}
+	fmt.Println("shutdown complete.")
 }
